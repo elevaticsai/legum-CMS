@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { storageService } from '../services/storage';
 import type { ComplianceData, Filters, FileState, DataState } from '../types';
 
 export const useDataManagement = () => {
@@ -37,15 +38,32 @@ export const useDataManagement = () => {
     section: 'All'
   });
 
+  // Load saved data on initial mount
+  useEffect(() => {
+    const savedData = storageService.getData();
+    if (savedData) {
+      setData(savedData);
+      setFilteredData(savedData);
+    }
+  }, []);
+
   const handleFileUpload = (fileType: keyof FileState, file: File) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const csvData = event.target?.result as string;
         const parsedData = parseCSV(csvData);
-        setData(prev => ({ ...prev, [fileType]: parsedData }));
-        setFilteredData(prev => ({ ...prev, [fileType]: parsedData }));
-        setFiles(prev => ({ ...prev, [fileType]: file }));
+        
+        const newData = { ...data, [fileType]: parsedData };
+        setData(newData);
+        setFilteredData(newData);
+        
+        const newFiles = { ...files, [fileType]: file };
+        setFiles(newFiles);
+        
+        // Save to localStorage
+        storageService.saveData(newData);
+        storageService.saveFiles(newFiles);
       };
       reader.readAsText(file);
     }
@@ -92,11 +110,13 @@ export const useDataManagement = () => {
 const parseCSV = (csvData: string): any[] => {
   const lines = csvData.split('\n');
   const headers = lines[0].split(',').map(header => header.trim());
-  return lines.slice(1).map(line => {
-    const values = line.split(',');
-    return headers.reduce((obj, header, index) => {
-      obj[header] = values[index]?.trim() || '';
-      return obj;
-    }, {} as any);
-  });
+  return lines.slice(1)
+    .filter(line => line.trim()) // Skip empty lines
+    .map(line => {
+      const values = line.split(',');
+      return headers.reduce((obj, header, index) => {
+        obj[header] = values[index]?.trim() || '';
+        return obj;
+      }, {} as any);
+    });
 };
