@@ -26,7 +26,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => (
   <div className="bg-white border-b">
     <div className="px-6">
-      <h1 className="text-2xl font-bold py-6 mb-2">Compliance Dashboard</h1>
+      <h1 className="text-2xl font-regular py-6 mb-2">Compliance Dashboard</h1>
       <div className="flex space-x-4 mb-2">
         {tabs.map((tab) => (
           <TabButton
