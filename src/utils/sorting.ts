@@ -1,7 +1,9 @@
 import { ComplianceData } from '../types';
 
 const parseDate = (dateStr: string): Date => {
-  // Handle special date formats
+  if (!dateStr || dateStr === '-') return new Date(0);
+  
+  // Handle "20th-Jan" format
   if (dateStr.includes('th-')) {
     const [day, month] = dateStr.split('th-');
     const months = {
@@ -10,6 +12,13 @@ const parseDate = (dateStr: string): Date => {
     };
     return new Date(2024, months[month as keyof typeof months], parseInt(day));
   }
+
+  // Handle "MM/DD/YY" format
+  if (dateStr.includes('/')) {
+    const [month, day, year] = dateStr.split('/');
+    return new Date(2000 + parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+
   return new Date(dateStr);
 };
 
@@ -22,7 +31,12 @@ const compareValues = (a: any, b: any, isDate: boolean = false): number => {
     return parseDate(a).getTime() - parseDate(b).getTime();
   }
 
-  return a < b ? -1 : 1;
+  // Handle numeric values
+  if (!isNaN(Number(a)) && !isNaN(Number(b))) {
+    return Number(a) - Number(b);
+  }
+
+  return String(a).localeCompare(String(b));
 };
 
 export const sortData = (
@@ -35,7 +49,8 @@ export const sortData = (
     'Due Date',
     'Valid till',
     'Register generate Date',
-    'Submission Date'
+    'Submission Date',
+    'Month'
   ].includes(key);
 
   return [...data].sort((a, b) => {
